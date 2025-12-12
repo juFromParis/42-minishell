@@ -1,0 +1,116 @@
+Ce qu'est un arbre binaire / AST et pourquoi c'est utile pour minishell
+Un arbre binaire (ou plus généralement un arbre) est une structure de données où chaque nœud a au plus deux enfants (gauche/droite).
+En shell, on utilise surtout un AST (Abstract Syntax Tree) — souvent binaire pour des opérateurs binaires — pour représenter la structure syntaxique d'une ligne de commande : commandes simples, pipes, opérateurs logiques (&&, ||), séparateurs (;) et redirections.
+Avantages concrets :
+Représentation claire de la priorité des opérateurs (precedence) et de l'ordre d'exécution.
+Exécution facile via parcours d'arbre (souvent post-order : exécuter enfants avant le parent).
+Simplifie l'implémentation d'opérateurs composites (pipe entre deux sous-arbres, &&/|| qui testent le code de retour).
+Facilite l'analyse d'erreurs, la gestion des sous-shells, la réécriture ou optimisation.
+Exemple simple (visualisation)
+Ligne :
+echo hi | grep h > out && ls
+
+Arbre (format textuel) — opérateur binaire entre gauche et droite :
+
+      (AND)
+     /     \
+ (PIPE)     (SEQ?)  -> ici droite est `ls`
+ /    \
+ 
+(CMD) (REDIR '>' out)
+echo hi grep h
+
+Plus précisément, on peut représenter grep h > out comme un nœud REDIR dont l'enfant gauche est la commande grep h. Le PIPE relie echo hi (gauche) et le nœud REDIR (droite). Ensuite l'opérateur AND a en droite la commande ls.
+
+Exécution (logique) :
+
+Exécute le PIPE (forks, redirections, connecte stdout gauche -> stdin droite).
+Quand le PIPE retourne, si code_retour == 0 alors exécute ls.
+Comment écrire/peupler l'arbre dans minishell
+Étapes générales :
+
+Tokenize (séparer mots, quotes, opérateurs : |, &&, ||, >, >>, <, ;, (, ), heredoc <<).
+Parser qui respecte la priorité :
+Par exemple priorité (du plus fort au plus faible) : parenthèses, redirections (attachées à la commande), pipes, &&/||, ; (séparateur).
+Construire l'AST : chaque opérateur binaire devient un nœud avec deux enfants ; chaque commande simple devient feuille (nœud de type CMD contenant argv et redirs).
+Exécuter via parcours (voir section exécution).
+Deux approches de parsing courantes :
+
+Shunting-yard (transformer en RPN puis construire l'arbre) — pratique pour gérer priorité des opérateurs.
+Recursive descent / Pratt parser — souvent plus lisible pour des grammaires simples ; traiter les redirections comme appartenant à la command node.
+Squelette C minimal pour un nœud AST
+Voici un exemple de structure C simple (squelette — adapté à minishell). C'est volontairement minimal ; adaptez aux besoins (heredoc, types de redirs, listes d'arguments, expansions).
+
+
+typedef enum e_node_type {    NODE_CMD,    // commande simple (feuille)    NODE_PIPE,   // |    NODE_AND,    // &&    NODE_OR,     // ||    NODE_SEQ,    // ;    NODE_REDIR   // redirection (>, >>, <)} t_node_type;typedef struct s_node {    t_node_type type;    // pour NODE_CMD    char **argv;           // NULL-terminé    // pour NODE_REDIR    char *redir_target;    // fichier ou token ici-doc    int redir_mode;        // 0: >, 1: >>, 2: <    // enfants    struct s_node *left;    struct s_node *right;} t_node;
+Fonctions à implémenter :
+
+t_node *node_new_cmd(char **argv, ...)
+t_node *node_new_op(t_node_type type, t_node *left, t_node *right)
+void free_tree(t_node *root) — libérer récursivement argv, redir_target, les nœuds.
+Stratégie d'exécution (parcours)
+Souvent on utilise un parcours post-order (gauche, droite, parent) :
+Si feuille (NODE_CMD) : exécuter la commande (fork + execve) en tenant compte des redirections locales.
+Si NODE_PIPE : créer un pipe, fork pour exécuter left avec stdout → pipe[1], fork pour exécuter right avec stdin ← pipe[0], attendre les deux.
+Si NODE_AND / NODE_OR : exécuter left, vérifier status, exécuter right seulement si condition (AND => left == 0, OR => left != 0).
+Si NODE_REDIR attaché à une commande : avant exec, dupliquer FD (dup2) selon redir_mode.
+Important : la gestion des FDs et des forks est critique. Par exemple, avec cmd1 | cmd2 | cmd3 il faut créer les pipes correctement et gérer les forks en chaîne (ou gérer via récursion).
+
+Pseudo pour NODE_AND :
+
+status = exec_tree(node->left);
+if (status == 0) status = exec_tree(node->right);
+return status;
+Pour NODE_PIPE :
+
+créer pipe()
+fork pour left : dup2(pipe[1], STDOUT_FILENO); close pipe fds; exec left subtree (peut être un sous-arbre)
+fork pour right : dup2(pipe[0], STDIN_FILENO); close pipe fds; exec right subtree
+parent closes pipe fds and waitpid both children
+Parsing : outils et recommandations
+Tokenisation doit gérer quotes ('' et ""), échappements, et expansion plus tard.
+Redirections attachées : cmd > out doit être reconnue comme une propriété de la commande, pas comme un opérateur binaire supérieur.
+Par exemple faire une étape "groupe redirs avec commande" pendant le parsing des tokens.
+Pour la priorité : traiter les parenthèses en créant un sous-parser récursif.
+Tests unitaires : lignes simples, pipes chainés, redirections mixtes, combinaisons de &&/||, parenthèses, heredoc, cas d'erreur (syntax error : | en début ou fin).
+Pièges et cas difficiles
+Heredoc (<<) : gestion en avance (create temporary here-doc content), gestion de SIGINT pendant la lecture du heredoc.
+Subshells (cmd1; cmd2) : créer un nœud SUBSHELL dont l'exécution se fait dans un fork (ne pas modifier l'environnement du parent).
+Redirections multiples sur une même commande : les dernières redirections prennent le dessus.
+Gestion des signaux : ctrl-C, ctrl-D à prendre en compte pendant le parsing/exécution.
+Reaper zombies : attendre correctement toute progéniture (waitpid avec WNOHANG si nécessaire selon conception).
+Tests utiles à automatiser
+Commandes simples : echo hello
+Pipes : echo a | tr a b | cat -
+Redirs : echo hi > f; cat < f
+And/Or : false || echo ok ; true && echo ok
+Parenthèses/subshells : (echo a; echo b) | wc -l
+Heredoc : cat << EOF\n...\nEOF
+Conseils pratiques pour le projet minishell (42)
+Faites d'abord un AST simple sans tout gérer : support de pipes, redirections simples, &&/||, puis ajoutez heredoc et subshells.
+Écrire des tests automatiques (scripts shell) pour chaque fonctionnalité.
+Structurez code en modules : tokenizer, parser, ast, executor, utils (fd, wait).
+Documentez les invariants (qui ferme quel FD, qui attend quel pid).
+Exemple rapide : exécution récursive (pseudocode)
+
+int exec_tree(t_node *n) {
+  if (!n) return 0;
+  if (n->type == NODE_CMD) {
+    return exec_command(n->argv, n->redir info...);
+  } else if (n->type == NODE_PIPE) {
+    // create pipe, fork left and right, wire fds, wait children
+  } else if (n->type == NODE_AND) {
+    int s = exec_tree(n->left);
+    if (s == 0) s = exec_tree(n->right);
+    return s;
+  } else if (n->type == NODE_OR) {
+    int s = exec_tree(n->left);
+    if (s != 0) s = exec_tree(n->right);
+    return s;
+  } ...
+}
+Prochaine étape — je peux aider de 3 façons
+Écrire un petit parseur d'exemple (tokenizer + shunting-yard → AST) en C pour que vous puissiez l'intégrer dans minishell.
+Écrire le module executor (gestion des pipes/forks/redirs) basé sur l'AST.
+Revoir votre code existant (si vous avez un parseur ou executor déjà) et proposer corrections / simplifications.
+Dites-moi laquelle vous voulez que j'implémente en premier (ou partagez un fichier du projet à analyser) — je peux démarrer automatiquement.

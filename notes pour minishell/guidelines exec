@@ -1,0 +1,21 @@
+Si la commande ayant || contient des redirections ou fait partie d’un pipeline, vous devez normalement fork, car appliquer les redirections dans le parent peut casser le shell (il faudrait alors restaurer soigneusement les FDs).
+Si vous forkiez toujours, les builtins qui modifient l’état du shell (p.ex. cd) ne produiront pas l’effet attendu (chdir dans enfant ne change pas le répertoire du parent). Il faut donc détecter les builtins « à effet » et les exécuter dans le parent.
+Si vous exécutez le builtin dans le parent, assurez-vous de sauvegarder/restaurer l’état des FDs si vous avez dû modifier l’entrée/sortie pour simuler la commande (p.ex. redirections). Les opérations de restaurations doivent être robustes.
+Pour a || b la règle sémantique est simple : exécuter b seulement si le code de sortie de a est non nul. La mécanique (fork/no-fork) doit être choisie en respectant les contraintes ci‑dessous.
+
+Stratégie recommandée (flux d’exécution)
+
+Examiner le nœud/commande a.
+Si a est un builtin qui modifie l’état du shell (liste définie dans votre projet) et qu’il n’a pas de redirections/pipeline :
+Exécuter le builtin dans le parent, obtenir son statut (int).
+Si statut != 0 -> exécuter b (voir étape 5).
+Sinon ne pas exécuter b.
+Sinon (commande externe, pipeline, redirections, ou builtin non-parental) :
+Fork.
+Dans l’enfant : appliquer redirections, restaurer handlers si nécessaire, exécuter builtin ou execve pour externe, terminer via _exit(status) si échec.
+Dans le parent : attendre l’enfant (waitpid), récupérer le statut.
+Après exécution de a, interpréter le statut avec WIFEXITED/WEXITSTATUS (ou WIFSIGNALED/WTERMSIG si vous voulez traiter les signaux).
+Si a a échoué (statut non nul selon votre politique), exécuter b en suivant la même logique (détecter builtin vs externe, fork si nécessaire).
+Retourner au niveau supérieur le code de sortie final (celui de b si b a été exécutée, sinon celui de a).
+
+Ajouter le traitement des terminaisons par signal (WIFSIGNALED/WTERMSIG) donne des diagnostics plus clairs. Enfin, si exec_command utilise execve, considérer d’appeler perror(pathname) puis exit(errno == ENOENT ? 127 : 126) pour respecter les conventions de code de sortie d’un shell.

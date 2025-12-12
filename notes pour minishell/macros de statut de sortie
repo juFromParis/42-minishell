@@ -1,0 +1,33 @@
+Macros principales
+
+    WIFEXITED(status) :
+        Description : Vérifie si le processus enfant s'est terminé normalement.
+        Utilisation : Retourne true si le processus enfant a terminé avec un appel à exit() ou return dans la fonction main.
+        Exemple : c if (WIFEXITED(status)) { printf("Le processus enfant s'est terminé normalement.\n"); } 
+
+    WEXITSTATUS(status) :
+        Description : Récupère le code de sortie du processus enfant.
+        Utilisation : À utiliser uniquement si WIFEXITED(status) retourne true.
+        Exemple : c if (WIFEXITED(status)) { int exit_status = WEXITSTATUS(status); printf("Code de sortie : %d\n", exit_status); } 
+
+    WIFSIGNALED(status) :
+        Description : Indique si le processus enfant a été terminé par un signal non intercepté.
+        Utilisation : Retourne true si le processus a été tué par un signal.
+        Exemple : c if (WIFSIGNALED(status)) { printf("Le processus enfant a été terminé par un signal.\n"); } 
+
+    WTERMSIG(status) :
+        Description : Récupère le numéro du signal ayant causé la terminaison du processus enfant.
+        Utilisation : À utiliser uniquement si WIFSIGNALED(status) retourne true.
+        Exemple : c if (WIFSIGNALED(status)) { int signal_num = WTERMSIG(status); printf("Signal ayant causé la terminaison : %d\n", signal_num); } 
+
+Autres macros utiles
+
+    WIFSTOPPED(status) :
+        Description : Indique si le processus enfant est actuellement arrêté.
+        Utilisation : À utiliser avec l'option WUNTRACED dans waitpid().
+        Exemple : c if (WIFSTOPPED(status)) { printf("Le processus enfant est arrêté.\n"); } 
+
+    WSTOPSIG(status) :
+        Description : Récupère le numéro du signal ayant causé l'arrêt du processus enfant.
+        Utilisation : À utiliser uniquement si WIFSTOPPED(status) retourne true.
+        Exemple : c if (WIFSTOPPED(status)) { int stop_signal = WSTOPSIG(status); printf("Signal ayant causé l'arrêt : %d\n", stop_signal); } 

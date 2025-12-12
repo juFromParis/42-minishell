@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   tests.c                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jderachi <jderachi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: vtaniga <vtaniga@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 10:52:57 by jderachi          #+#    #+#             */
-/*   Updated: 2025/12/05 11:59:09 by jderachi         ###   ########.fr       */
+/*   Updated: 2025/12/12 21:32:47 by vtaniga          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,25 @@
 #define AST_COLOR       "\033[36m"
 #define RESPONSE_COLOR  "\033[33m"
 #define RESET           "\033[0m"
+
+void	print_heredocs(t_heredoc *node)
+{
+	int	i;
+
+	i = 0;
+	while (node)
+	{
+		printf(" heredoc[%d]: delimiter=\"%s\"",
+			i, node->delimiter);
+		if (node->content)
+			printf(" content=\"%s\"", node->content);
+		else
+			printf(" content=NULL");
+		node = node->next;
+		i++;
+	}
+}
+
 
 /* ======================= TOKEN DEBUG ======================= */
 
@@ -79,18 +98,37 @@ void	print_parse(t_node *node)
 	printf("Node type: %s", node_type_name(node->type));
     
 	if (node->cmd)
-		printf(" | cmd: \"%s\"", node->cmd);
-	/*
+	{
+		printf(" | cmd/args: [");
+		for (int i = 0; node->cmd[i]; i++)
+		{
+			printf("\"%s\"", node->cmd[i]);
+			if (node->cmd[i + 1])
+				printf(", ");
+		}
+		printf("]");
+	}
 	if (node->file)
 		printf(" | file: \"%s\"", node->file);
-	*/
+	if (node->heredoc)
+		printf(" | heredoc: \"%s\"", node->heredoc);
+	if (node->heredocs)
+		print_heredocs(node->heredocs);
+	if (node->heredoc)
+		printf(" | heredoc: \"%s\"", node->heredoc);
 	// Affichage des arguments
-    if (node->arg)
-    {
-        printf(" | args: [");
-        printf("\"%s\"", node->arg);
-        printf("]");
-    }
+	if (node->cmd2)
+	{
+		printf(" | cmd2: [");
+		for (int i = 0; node->cmd2[i]; i++)
+		{
+			printf("\"%s\"", node->cmd2[i]);
+			if (node->cmd2[i + 1])
+				printf(", ");
+		}
+		printf("]");
+	}
+
 	printf("\n");
     
 	if (node->left)
@@ -117,15 +155,30 @@ static void print_ast_rec(t_node *node, int depth, int is_right)
     
     // Affichage de la commande
     if (node->cmd)
-        printf(" \"%s\"", node->cmd);
+	{
+		printf(" cmd/args=[");
+		for (int i = 0; node->cmd[i]; i++)
+		{
+			printf("\"%s\"", node->cmd[i]);
+			if (node->cmd[i + 1])
+				printf(", ");
+		}
+		printf("]");
+	}
 
     // Affichage des arguments
-    if (node->arg)
-    {
-        printf(" args=[");
-        printf("\"%s\"", node->arg);
-        printf("]");
-    }
+    if (node->cmd2)
+	{
+		printf(" cmd2=[");
+		for (int i = 0; node->cmd2[i]; i++)
+		{
+			printf("\"%s\"", node->cmd2[i]);
+			if (node->cmd2[i + 1])
+				printf(", ");
+		}
+		printf("]");
+	}
+
 
 	// Affichage des arguments
     if (node->redir)
@@ -136,7 +189,18 @@ static void print_ast_rec(t_node *node, int depth, int is_right)
 
     // Affichage du fichier (si présent)
     if (node->file)
-        printf(" file=\"%s\"", node->file);
+	{
+		printf(" file=\"%s\"", node->file);
+	}
+        
+	if (node->heredocs)
+		print_heredocs(node->heredocs);
+
+	// Affichage du fichier (si présent)
+    if (node->heredoc)
+	{
+		printf(" heredoc (last)=\"%s\"", node->heredoc);
+	}
 
     printf("]\n");
 
@@ -156,9 +220,7 @@ void	print_tree(t_node *root)
 		"\n/--AST---------------------------------------------------------------"
 		"-----------------------------/\n\n" RESET);
 	print_ast_rec(root, 0, 1);
-	printf(RESPONSE_COLOR
-		"\n/--REPONSE-----------------------------------------------------------"
-		"-----------------------------/\n\n" RESET);
+	printf("\n");
 }
 
 /* debug détaillé d'un node + ses enfants binaires */

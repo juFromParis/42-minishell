@@ -6,29 +6,29 @@
 /*   By: jderachi <jderachi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/28 13:30:37 by jderachi          #+#    #+#             */
-/*   Updated: 2025/12/04 10:02:54 by jderachi         ###   ########.fr       */
+/*   Updated: 2025/12/10 13:54:31 by jderachi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-/*
 #include "../../inc/minishell.h" 
 
-int	is_error_ope(t_node *node)
+int	is_error_ope(t_token *token)
 {
-	if (!node)
+	t_token	*next;
+
+	if (!token)
 		return (0);
-	if ((ft_strcmp(node->value, "||") == 0 || ft_strcmp(node->value, "&&") == 0)
-		&& (!node->sibling || !node->previous || node->sibling->type == END))
+	if (ft_isoperator(token->type) && token->prev == NULL)
+		return (printf("bash: " SYNTAX_ERROR " `%s'\n", token->value), 1);
+	if (ft_isoperator(token->type) && token->next == NULL)
+		return (printf("bash: " SYNTAX_ERROR " `newline'\n"), 1);
+	if (ft_isoperator(token->type) && ft_isoperator(token->next->type))
 	{
-		printf("bash: "SYNTAX_ERROR" `%s'\n", node->value);
-		return (1);
-	}
-	if ((ft_strcmp(node->value, "|") == 0 || ft_strcmp(node->value, "&") == 0)
-		&& (!node->sibling || !node->previous || node->sibling->type == END))
-	{
-		ft_strcmp("bash: "SYNTAX_ERROR" `%s'\n", node->value);
-		return (1);
+		next = token->next;
+		if ((token->type == T_OR && next->type == T_OR)
+			|| (token->type == T_AND && next->type == T_AND))
+			return (0);
+		return (printf("bash: " SYNTAX_ERROR " `%s'\n", next->value), 1);
 	}
 	return (0);
 }
-*/

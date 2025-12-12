@@ -1,0 +1,24 @@
+echo 
+with option -n
+
+cd
+with relative path
+with absolute path
+
+pwd
+with no options
+
+export
+with no options
+
+unset
+with no options
+supprime une variable d'envronnement
+
+
+env
+with no options
+donne la liste des variables d'environnement
+
+exit
+with no options

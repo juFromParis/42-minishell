@@ -3,47 +3,50 @@
 /*                                                        :::      ::::::::   */
 /*   syntax_error.c                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jderachi <jderachi@student.42.fr>          +#+  +:+       +#+        */
+/*   By: vtaniga <vtaniga@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/26 09:46:29 by jderachi          #+#    #+#             */
-/*   Updated: 2025/12/04 10:02:20 by jderachi         ###   ########.fr       */
+/*   Updated: 2025/12/11 10:58:05 by vtaniga          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-/*
 #include "../../inc/minishell.h" 
 
-int	is_error_type(t_node *node)
+int	is_error_type(t_token *node)
 {
-	if (node->type == OPE)
-		if (is_error_ope(node))
-			return (1);
-	if (node->type == RDR)
-		if (is_error_redir(node))
-			return (1);
-	if (node->type == SUB)
-		if (is_error_sub(node))
-			return (1);
+	(void)node;
+	// if (ft_isoperator(node->type))
+	// 	if (is_error_ope(node))
+	// 		return (1);
+	// if (node->type == T_CMD)
+	// 	if (is_error_cmd(node))
+	// 		return (1);
 	return (0);
 }
 
-int	is_syntax_error(t_node *list)
+int	is_error_nosub(t_token *node)
 {
-	t_node	*node;
-
-	if (!list)
+	if (!node)
 		return (0);
-	node = list;
 	if (node->value)
 		if (is_error_type(node))
 			return (1);
-	if (node->child)
-		if (is_syntax_error(node->child))
-			return (1);
-	if (node->sibling)
-		if (is_syntax_error(node->sibling))
+	if (node->next)
+		if (is_error_nosub(node->next))
 			return (1);
 	return (0);
 }
 
-*/
+int	is_syntax_error(t_token *node)
+{
+	if (!node)
+		return (0);
+	if (node->value)
+	{
+		if (is_error_sub(node))
+			return (1);
+		if (is_error_nosub(node))
+			return (1);
+	}
+	return (0);
+}

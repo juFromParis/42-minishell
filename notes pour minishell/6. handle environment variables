@@ -1,0 +1,5 @@
+should expand to their values
+
+getenv permet de faire une copie d'une variable particuliere
+
+on genere une structure pour une liste chaine qui facilite la gestion des variable d'environnements

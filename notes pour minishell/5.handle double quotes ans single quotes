@@ -1,0 +1,16 @@
+export a="ls -l"
+
+=> si le lexer le voit comme une chaine de caractere ls -l ne va pas le voir
+all special characters used by the shell loose their special meaning
+exception are $ and \
+
+handle parameter expansion
+
+
+avoid word splitting
+
+echo "$cal"
+
+
+single quotes ' ' => preserves the literal value of each character within the quotes
+with no expansion performed

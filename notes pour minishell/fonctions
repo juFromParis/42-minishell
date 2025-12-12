@@ -1,0 +1,415 @@
+readline
+Fonctionnement de base
+
+La fonction readline affiche une invite (prompt) et lit une ligne de texte entrée par l'utilisateur. La ligne lue est allouée dynamiquement avec malloc, et il est nécessaire de la libérer avec free une fois son utilisation terminée.
+
+#include <stdio.h>
+#include <readline/readline.h>
+#include <readline/history.h>
+
+char *line = readline("Enter a line: ");
+if (line) {
+    printf("You entered: %s\n", line);
+    free(line);
+}
+
+
+rl_clear_history
+La fonction rl_clear_history() permet de supprimer l'historique des commandes dans la bibliothèque GNU Readline. Elle est particulièrement utile pour nettoyer l'historique avant de quitter un programme ou pour des raisons de confidentialité.
+
+
+rl_on_newline
+La fonction rl_on_new_line fait partie de la bibliothèque GNU Readline. Elle est utilisée pour indiquer aux routines de mise à jour que vous êtes passé à une nouvelle ligne vide, généralement après avoir affiché un saut de ligne.
+Cette fonction est utile pour maintenir la cohérence de l'affichage lorsque vous manipulez manuellement les sorties.
+Elle est souvent utilisée en conjonction avec d'autres fonctions de GNU Readline comme rl_redisplay ou rl_reset_line_state.
+
+rl_replace_line
+La fonction rl_replace_line est une fonction de la bibliothèque Readline en C, utilisée pour remplacer le contenu du tampon de ligne actuel par un nouveau texte.
+Description
+
+La fonction rl_replace_line prend deux paramètres :
+
+    text : le nouveau texte à insérer dans le tampon de ligne.
+    clear_undo : un indicateur pour savoir si la liste de désannulation doit être libérée.
+
+Fonctionnement
+
+    Vérification de la longueur : La fonction vérifie si la longueur du texte fourni est supérieure à la longueur actuelle du tampon de ligne. Si c'est le cas, elle étend le tampon de ligne pour accommoder le nouveau texte.
+    Copie du texte : Le nouveau texte est copié dans le tampon de ligne.
+    Mise à jour de la position : La position de fin de ligne est mise à jour pour refléter la nouvelle longueur du texte.
+    Libération de la liste de désannulation : Si clear_undo est non nul, la liste de désannulation est libérée.
+    Mise à jour de la position du curseur : La fonction _rl_fix_point est appelée pour ajuster la position du curseur.
+Utilisation dans un projet de shell
+
+Dans le contexte d'un projet de shell utilisant la fonction readline, cette fonction peut être utilisée pour manipuler le tampon de ligne, par exemple pour gérer les signaux comme Ctrl+C sans rencontrer de problèmes de double invite.
+
+Si vous avez besoin de plus de détails sur l'utilisation de cette fonction dans un projet spécifique, n'hésitez pas à demander.
+
+rl_redisplay
+La fonction rl_redisplay est une fonction de la bibliothèque readline en C, utilisée pour actualiser l'affichage de la ligne d'entrée courante. Elle est particulièrement utile lorsque la ligne d'entrée a été modifiée et doit être redessinée.
+Fonctionnement
+
+    Utilisation principale : Rafraîchir l'affichage de la ligne d'entrée après une modification.
+    Appel typique : Après avoir modifié le tampon de ligne (line buffer).
+
+add_history
+La fonction add_history en C permet d'ajouter des entrées à un tableau d'historique. Voici ses principales caractéristiques et son fonctionnement :
+Fonctionnement de base
+
+    Paramètre : La fonction prend en entrée une chaîne de caractères (const char entry) à ajouter à l'historique.
+    Vérifications :
+        Elle vérifie que l'entrée n'est pas NULL ou vide.
+        Elle vérifie si le nombre maximum d'entrées a été atteint.
+
+Gestion de l'historique
+
+    Capacité maximale : Si le nombre maximum d'entrées est atteint, l'entrée la plus ancienne est écrasée.
+    Ajout d'une entrée : La nouvelle entrée est ajoutée à la fin du tableau d'historique.
+    history[MAX_HISTORY_ENTRIES][MAX_HISTORY_LENGTH] : Tableau pour stocker les entrées.
+    numEntries : Compteur du nombre d'entrées actuelles.
+
+printf
+
+malloc
+
+free
+
+write
+
+access
+La fonction access en C permet de vérifier les permissions d'accès à un fichier. Elle est définie dans le fichier d'en-tête <unistd.h>.
+Syntaxe
+
+#include <unistd.h>
+int access(const char *path, int mode);
+
+Paramètres
+
+    path : Chemin vers le fichier à vérifier.
+    mode : Bitmask spécifiant les permissions à vérifier.
+
+Valeurs de mode
+
+    F_OK : Vérifie l'existence du fichier.
+    R_OK : Vérifie la permission de lecture.
+    W_OK : Vérifie la permission d'écriture.
+    X_OK : Vérifie la permission d'exécution.
+
+Retour
+
+    0 : Si l'accès est permis.
+    -1 : Si l'accès est refusé ou en cas d'erreur.
+
+La fonction access utilise l'UID réel et le GID réel au lieu de l'UID effectif et du GID effectif.
+
+
+open
+La fonction open() en C, définie dans <fcntl.h>, permet d'ouvrir ou créer un fichier et retourne un descripteur de fichier pour les opérations de lecture/écriture, avec des flags spécifiant le mode d'ouverture.
+Modes d'ouverture courants
+
+Voici quelques flags couramment utilisés :
+
+    O_RDONLY : Ouvre le fichier en mode lecture seule.
+    O_WRONLY : Ouvre le fichier en mode écriture seule.
+    O_RDWR : Ouvre le fichier en mode lecture et écriture.
+    O_CREAT : Crée le fichier s'il n'existe pas.
+    O_TRUNC : Réduit la taille du fichier à zéro si il existe déjà.
+
+Retour et gestion des erreurs
+
+La fonction open() retourne un descripteur de fichier (un entier) en cas de succès, ou -1 en cas d'échec. Il est important de gérer les erreurs pour éviter des problèmes de permissions ou des fichiers inexistants.
+
+read
+
+close
+
+fork
+La fonction fork() est un appel système essentiel en programmation C, principalement utilisé dans les systèmes d'exploitation de type Unix et Linux. Voici les points clés à retenir :
+Définition et Fonctionnement
+
+    Création de processus : fork() permet de créer un nouveau processus, appelé processus enfant, qui est une copie exacte du processus parent (celui qui appelle fork()).
+    Retour de la fonction :
+        Dans le processus parent : fork() retourne le PID (Process ID) du processus enfant.
+        Dans le processus enfant : fork() retourne 0.
+        En cas d'échec : fork() retourne -1.
+
+Utilisations et Applications
+
+    Traitement parallèle : Permet d'exécuter plusieurs tâches simultanément.
+    Serveurs web : Gestion de multiples requêtes clients de manière concurrente.
+    Systèmes d'exploitation : Gestion de divers processus système.
+
+wait
+La fonction wait() en C permet à un processus parent d'attendre la terminaison d'un processus enfant, assurant ainsi une gestion efficace des ressources et de l'intégrité des données.
+
+
+waitpid
+La fonction waitpid en C est utilisée pour surveiller l'état d'un processus enfant spécifique. Elle permet au processus parent de gérer plus finement l'attente par rapport à la fonction wait.
+Paramètres
+
+    child_pid : Identifiant du processus enfant à surveiller.
+        Si -1, waitpid fonctionne comme wait et attend n'importe quel processus enfant.
+        Si 0, attend un enfant du même groupe de processus.
+        Si un PID spécifique, attend ce processus enfant précis.
+    status : Pointeur vers une variable qui recevra le statut de terminaison du processus enfant.
+    options :
+        WNOHANG : Ne bloque pas le processus parent. Si le processus enfant n'a pas encore terminé, waitpid retourne immédiatement.
+        0 : Le processus parent attend la terminaison du processus enfant.
+
+Valeurs de retour
+
+    PID du processus enfant : Si le processus enfant a terminé.
+    0 : Si WNOHANG est utilisé et que le processus enfant n'a pas encore terminé.
+    -1 : En cas d'erreur (par exemple, si le processus enfant n'existe pas).
+Différence avec wait()
+
+    wait() attend n'importe quel processus enfant et retourne le PID du premier enfant terminé.
+    waitpid() permet de spécifier un processus enfant particulier et offre plus d'options de contrôle.
+
+Macros pour vérifier l'état du processus enfant
+
+    WIFEXITED(status) : Vérifie si le processus enfant s'est terminé normalement.
+    WEXITSTATUS(status) : Récupère le statut de sortie du processus enfant.
+    WIFSIGNALED(status) : Vérifie si le processus enfant a été terminé par un signal.
+    WTERMSIG(status) : Récupère le numéro du signal qui a terminé le processus enfant.
+
+wait3
+La fonction wait3 en C est utilisée pour attendre la fin d'un processus enfant. Elle fait partie de la bibliothèque standard C (libc).
+Description
+
+wait3 est une fonction qui bloque le processus appelant jusqu'à ce qu'un de ses processus enfants se termine ou qu'un signal soit reçu. Elle permet également de récupérer des informations sur l'utilisation des ressources du processus enfant via la structure rusage.
+
+
+wait4
+La fonction wait4 en C permet d'attendre la fin d'un processus fils spécifié par son PID et utilise des intervalles d'usage pour récupérer des informations sur les ressources utilisées.
+
+
+signal
+
+sigaction
+
+sigemptyset
+
+sigaddset
+
+kill
+
+exit
+
+getcwd
+Pour obtenir le répertoire de travail courant en C, utilisez la fonction getcwd en incluant les en-têtes <unistd.h>, <stdio.h> et <stdlib.h>.
+    Vérification du retour : Toujours vérifier le retour de la fonction (NULL en cas d'échec).
+    Taille du buffer : Le buffer doit être suffisamment grand pour contenir le chemin.
+Erreurs possibles :
+    ERANGE si le buffer est trop petit.
+    ENOENT si le répertoire n'existe pas.
+
+chdir
+La fonction chdir() en C permet de changer le répertoire de travail courant d'un processus vers un nouveau chemin spécifié.
+Elle est souvent utilisée pour naviguer dans le système de fichiers et pour accéder à des fichiers dans différents répertoires.
+
+stat
+La fonction stat() en C permet d'obtenir des métadonnées d'un fichier, comme sa taille, ses permissions, et les dates de modification et de création, en utilisant la structure struct stat.
+
+lstat
+La fonction lstat() en C permet d'obtenir des informations sur un fichier, y compris les liens symboliques, via la structure struct stat.
+
+fstat
+La fonction fstat() en C, déclarée dans <sys/stat.h>, permet d'obtenir des informations détaillées sur un fichier ouvert via son descripteur de fichier. Elle remplit une structure stat avec des champs comme la taille, les permissions, la propriété et les horodatages.
+Utilisation courante
+
+La fonction fstat() est souvent utilisée pour :
+
+    Vérifier les permissions, la taille, la propriété et les horodatages d'un fichier.
+    Obtenir des informations sur les répertoires ouverts.
+    Optimiser les performances en évitant les appels système redondants.
+
+unlink
+La fonction unlink en C est utilisée pour supprimer un fichier du système de fichiers Linux. Voici les points clés à retenir :
+
+    Fonctionnement :
+        unlink supprime le nom et l'entrée du répertoire d'un fichier, mais ne libère pas immédiatement l'espace disque utilisé par son contenu.
+        Les données restent sur le disque tant que des descripteurs de fichiers ouverts référencent le fichier.
+	    Si le nom supprimé était le dernier lien vers un fichier et qu'aucun processus n'a le fichier ouvert, le fichier est supprimé et l'espace est libéré.
+    Si le nom était le dernier lien mais que des processus ont encore le fichier ouvert, le fichier reste en existence jusqu'à ce que le dernier descripteur de fichier soit fermé.
+
+execve
+int execve(const char *path, char *const argv[], char *const envp[]);
+
+    path : Chemin vers le programme à exécuter.
+    argv : Tableau de chaînes de caractères représentant les arguments du programme.
+    envp : Tableau de chaînes de caractères représentant les variables d'environnement.
+
+Fonctionnement
+
+    Remplacement du processus : execve remplace le processus actuel par un nouveau programme, initialisant de nouveaux segments de pile, de tas et de données.
+    Retour : La fonction execve ne retourne qu'en cas d'erreur. En cas de succès, le processus actuel est remplacé et les instructions suivantes ne sont pas exécutées.
+Points clés
+
+    Remplacement complet : Le processus actuel est complètement remplacé par le nouveau programme.
+    Gestion des erreurs : En cas d'échec, execve retourne -1 et définit errno pour indiquer l'erreur.
+    Variables d'environnement : Permet de passer des variables d'environnement au nouveau processus.
+
+Pour plus de détails, consultez la page de manuel execve(2) ou des tutoriels spécifiques sur l'utilisation des fonctions exec en C.
+
+dup 
+La fonction dup() est une fonction système en C, fournie par la bibliothèque <unistd.h>, utilisée pour dupliquer un descripteur de fichier.
+Fonctionnement
+
+    Duplication : dup() crée une copie d'un descripteur de fichier existant.
+    Nouveau descripteur : Elle utilise le plus petit numéro de descripteur de fichier inutilisé pour le nouveau descripteur.
+    Interchangeabilité : Le descripteur original et sa copie peuvent être utilisés de manière interchangeable, car ils partagent la même description de fichier ouverte, y compris le décalage de fichier et les indicateurs de statut de fichier.
+    Retour : dup() retourne le nouveau descripteur de fichier sur succès et -1 en cas d'échec.
+    Utilisation : Cette fonction est souvent utilisée pour rediriger les entrées/sorties standard ou pour gérer plusieurs descripteurs de fichier pour le même fichier.
+
+
+dup2
+La fonction dup2() en C est utilisée pour dupliquer un descripteur de fichier et rediriger les flux de sortie standard (STDOUT). Elle permet de remplacer un descripteur de fichier existant par un nouveau descripteur pointant vers le même fichier ouvert.
+
+Comportement de dup2()
+
+    Si newfd était déjà ouvert, il est fermé silencieusement avant d'être réutilisé.
+    Si oldfd n'est pas un descripteur de fichier valide, l'appel échoue et newfd n'est pas fermé.
+    Si oldfd est valide et que newfd a la même valeur que oldfd, dup2() ne fait rien et retourne newfd.
+Utilisation pour la redirection de STDOUT
+
+La fonction dup2() est souvent utilisée pour rediriger la sortie standard (STDOUT) vers un fichier. Par exemple, pour rediriger STDOUT vers un fichier nommé "tricky.txt" :
+
+Exemples d'utilisation
+
+    Redirection de STDOUT : Comme illustré ci-dessus, dup2() permet de rediriger la sortie standard vers un fichier.
+    Duplication de descripteurs : dup2() peut également être utilisé pour dupliquer un descripteur de fichier vers un autre descripteur spécifique.
+
+
+
+pipe
+Le système d'appel pipe() en C permet une communication unidirectionnelle entre processus, utilisant un buffer circulaire de 64KiB par défaut, implémenté dans l'espace mémoire virtuel du noyau pour des transferts efficaces.
+Fonctionnement de base
+
+La fonction pipe() crée un tube unidirectionnel entre deux processus. Elle retourne deux descripteurs de fichiers :
+
+    fd[0] pour la lecture
+    fd[1] pour l'écriture
+
+opendir
+La fonction opendir() est une fonction essentielle pour la gestion des répertoires en C, définie dans le fichier d'en-tête <dirent.h>. Elle permet d'ouvrir un flux de répertoire correspondant au chemin passé en argument et retourne un pointeur de type DIR*.
+Fonctionnement
+
+Signature : DIR *opendir(const char *pathname);
+Mode : Ouvre le répertoire en mode lecture seule.
+Retour :
+	Un pointeur DIR* représentant le flux de répertoire en cas de succès.
+	NULL en cas d'échec (par exemple, si le répertoire n'existe pas).
+		Points clés
+
+Portabilité : La fonction opendir() est portable et supportée sur les systèmes de type Unix.
+Gestion des erreurs : Vérifiez toujours les valeurs de retour et utilisez errno pour les erreurs.
+Fonctions associées :
+	readdir() : Lit l'entrée suivante du répertoire.
+	closedir() : Ferme le flux de répertoire.
+	rewinddir() : Remet le flux au début.
+	seekdir() et telldir() : Permettent de chercher et obtenir la position actuelle dans le répertoire.
+
+readdir
+
+closedir
+
+strerror
+La fonction strerror en C est utilisée pour convertir des codes d'erreur en messages lisibles par l'utilisateur. Elle est essentielle pour le débogage et la gestion des erreurs dans les programmes C.
+Description
+
+La fonction strerror prend un code d'erreur en entrée et retourne un pointeur vers une chaîne de caractères décrivant l'erreur correspondante. Les messages d'erreur générés dépendent de la plateforme de développement et du compilateur utilisé.
+Bonnes pratiques
+
+    Vérification des valeurs de retour : Toujours vérifier les valeurs de retour des appels de bibliothèque pour détecter les erreurs.
+    Utilisation de errno : Utiliser la variable errno pour déterminer l'erreur exacte lorsque les valeurs indiquent un échec.
+    Messages utilisateur : Afficher des messages d'erreur conviviaux avec strerror.
+    Gestion des erreurs : Gérer les erreurs de manière gracieuse pour éviter les plantages du logiciel.
+
+Alternatives
+
+    strerror_r : Une version thread-safe de strerror.
+    perror : Une autre fonction pour afficher des messages d'erreur, mais moins flexible que strerror.
+
+perror
+La fonction perror() en C affiche un message d'erreur descriptif basé sur la variable errno, utile pour le débogage.
+
+isatty
+La fonction isatty(int fd) teste si un descripteur de fichier fd est associé à un terminal, renvoyant 1 si c'est le cas, sinon 0 et définit errno en cas d'erreur.
+
+ttyname
+La fonction ttyname() en C renvoie le nom du terminal associé à un descripteur de fichier, ou NULL en cas d'erreur, comme si le descripteur n'est pas connecté à un terminal.
+
+ttyslot
+La fonction ttyslot() en C, déclarée dans <unistd.h>, permet de trouver l'emplacement du terminal en cours dans un fichier, et est disponible dans la bibliothèque standard libc.
+
+ioctl
+L'appel système ioctl (Input/Output Control) en C permet de manipuler les paramètres des périphériques sous-jacents des fichiers spéciaux, notamment les fichiers spéciaux en mode caractère comme les terminaux.
+Utilisation
+
+Les opérations ioctl sont codées pour indiquer si l'argument est un paramètre d'entrée ou de sortie, ainsi que la taille de l'argument en octets. Les macros utilisées pour spécifier une opération ioctl incluent :
+
+    _IO() : Aucune donnée n'est transférée.
+    _IOR() : Lecture de données.
+    _IOW() : Écriture de données.
+    _IOWR() : Lecture/écriture de données.
+
+getenv
+La fonction getenv en C recherche une variable d'environnement dans la liste des variables du système d'exploitation et retourne un pointeur vers la chaîne associée à name.
+
+tcsetattr
+La fonction tcsetattr configure les paramètres du terminal associé au descripteur de fichier fildes à partir de la structure termios référencée par termios_p. Le comportement dépend de la valeur de optional_actions :
+
+    TCSANOW : Les changements prennent effet immédiatement.
+    TCSADRAIN : Les changements prennent effet après que toute la sortie écrite vers le terminal a été transmise.
+    TCSAFLUSH : Les changements prennent effet après que toute la sortie a été transmise et toute entrée reçue mais non lue est abandonnée.
+    TCSASOFT : Les valeurs des champs c_cflag, c_ispeed et c_ospeed sont ignorées.
+
+tcgetattr
+La fonction tcgetattr() permet de récupérer les paramètres d'un terminal associé à un descripteur de fichier et de les stocker dans une structure termios.
+
+
+tgetent
+La fonction tgetent en C permet de récupérer la description d'un terminal à partir de la base de données termcap, en utilisant le nom du terminal comme argument.
+
+
+tgetflag
+    Fonctionnement : tgetflag retourne la valeur booléenne associée à l'identifiant id dans la description du terminal.
+    Valeurs de retour :
+        1 si la capacité est disponible et vraie.
+        0 si la capacité n'est pas disponible ou est fausse.
+        -1 en cas d'erreur.
+		Remarques
+
+    Portabilité : Évitez de compter sur le comportement spécial où tgetflag correspond à un identifiant de un seul caractère, car cela n'est pas portable.
+    Initialisation : Assurez-vous que la description du terminal a été chargée avec tgetent avant d'utiliser tgetflag.
+
+tgetnum
+La fonction tgetnum est une routine de la bibliothèque termcap utilisée pour récupérer une valeur numérique associée à une capacité de terminal.
+Description
+
+    Prototype : int tgetnum(const char *id);
+    Fonction : Récupère la valeur numérique de la capacité spécifiée par id.
+    Retour :
+        La valeur numérique associée à la capacité si elle est disponible.
+        -1 si la capacité n'est pas disponible.
+
+Utilisation
+
+Cette fonction est utilisée pour obtenir des valeurs numériques spécifiques à un terminal, telles que le nombre de lignes ou de colonnes. Elle est souvent utilisée en conjonction avec d'autres fonctions de la bibliothèque termcap comme tgetflag et tgetstr.
+
+tgetstr
+La fonction tgetstr est utilisée dans la bibliothèque Termcap pour récupérer une chaîne de caractères associée à une capacité terminale.
+
+tgoto
+Le mouvement du curseur dans la bibliothèque Termcap est géré par la fonction tgoto, qui traite un cas particulier. Voici les deux raisons principales pour lesquelles vous pourriez choisir d'utiliser tgoto :
+
+    Simplification de l'utilisation : tgoto permet de simplifier l'utilisation de la chaîne de description de terminal pour le mouvement du curseur. Elle prend en charge la chaîne de mouvement du curseur (cm) et les deux positions (horizontale et verticale) pour calculer automatiquement la chaîne de commande appropriée.
+
+    Gestion interne du buffer : La fonction tgoto gère un buffer interne statique pour stocker la chaîne de commande calculée. Cela évite à l'utilisateur de gérer manuellement la mémoire ou le stockage de la chaîne de commande, ce qui simplifie le code et réduit les risques d'erreurs.
+
+En résumé, tgoto est une fonction pratique pour manipuler le mouvement du curseur dans un terminal en utilisant la bibliothèque Termcap, offrant une solution simple et efficace pour les opérations de positionnement du curseur.
+
+tputs
+
+

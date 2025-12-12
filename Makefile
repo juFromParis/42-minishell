@@ -3,26 +3,30 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: jderachi <jderachi@student.42.fr>          +#+  +:+       +#+         #
+#    By: jderachi <jderachi@student.42.fr>          +#+  +:+ +:+         +#+     #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/11/15 12:20:00 by jderachi          #+#    #+#              #
-#    Updated: 2025/12/05 11:47:53 by jderachi         ###   ########.fr        #
+#    Updated: 2025/12/12 17:45:00 by jderachi         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 # Program name
 NAME = minishell
 
+
 # Compiler and flags
 CC     = cc
 CFLAGS = -Wall -Wextra -Werror -g
 
-# Colors
+# Colors & Blink
 GREEN  = \033[32m
 RED    = \033[31m
 YELLOW = \033[33m
-CYAN = \033[36m
+CYAN   = \033[36m
 RESET  = \033[0m
+BLINK = \033[5m
+NOBLINK = \033[25m
+
 
 RM = rm -f
 
@@ -34,27 +38,43 @@ ifeq ($(UNAME_S),Darwin)
 	READLINE_INC = -I$(shell brew --prefix readline)/include
 	READLINE_LIB = -L$(shell brew --prefix readline)/lib -lreadline
 else ifeq ($(UNAME_S),Linux)
-	READLINE_INC = -I/usr/include
+	READLINE_INC =
 	READLINE_LIB = -lreadline
 endif
 
+# ======================= LIBFT ======================= #
+
+LIBFT_DIR = libft
+LIBFT     = $(LIBFT_DIR)/libft.a
+LIBFT_INC = -I$(LIBFT_DIR)/includes
+LIBFT_LIB = -L$(LIBFT_DIR) -lft
+
 # Includes
-INCLUDES = -I./inc $(READLINE_INC)
+INCLUDES = -I./inc $(LIBFT_INC) $(READLINE_INC)
 
 # Sources
 SRCS = \
+	src/env/env.c \
+	src/exec/exec_command.c src/exec/exec_ast.c src/exec/exec_pipe.c src/exec/exec_redir_out.c src/exec/exec_redir_in.c\
+	src/exec/exec_redir_append.c src/exec/exec_redir_heredocument.c\
+	src/exec/cd.c src/utils/utils1.c src/utils/utils2.c src/utils/utils3.c src/utils/utils4.c \
+	src/expansion/wildcard.c src/expansion/variable.c\
 	src/main.c \
-	src/parsing/utils.c \
 	src/parsing/ischeck.c \
 	src/parsing/lexer.c \
 	src/parsing/token.c \
 	src/parsing/parsing.c \
-	src/parsing/cmd_split.c \
+	src/parsing/parsing_cmd.c \
+	src/parsing/parsing_redir.c \
+	src/parsing/parsing_arg.c \
 	src/parsing/node.c \
+	src/parsing/heredocs.c \
 	src/syntax_error/syntax_error.c \
 	src/syntax_error/syntax_ope.c \
-	src/syntax_error/syntax_redir.c \
+	src/syntax_error/syntax_cmd.c \
 	src/syntax_error/syntax_sub.c \
+	src/heredoc_init/heredoc_init.c \
+	src/signals/listeners.c \
 	src/for_tests_to_delete/tests.c \
 	src/exit.c
 
@@ -69,20 +89,24 @@ VAL = valgrind --leak-check=full --show-leak-kinds=all \
 			   --track-origins=yes --suppressions=$(SUPP)
 
 # Rules
-all: $(NAME)
+all: $(LIBFT) $(NAME)
+
+# Compile libft
+$(LIBFT):
+	@$(MAKE) -C $(LIBFT_DIR) --no-print-directory
 
 # Compile minishell
 $(NAME): $(OBJS)
-	@$(CC) $(CFLAGS) $(OBJS) $(READLINE_LIB) -o $(NAME)
+	@$(CC) $(CFLAGS) $(OBJS) $(LIBFT_LIB) $(READLINE_LIB) -o $(NAME)
+	@echo "$(CYAN)✓ $(NAME) compiled successfully!$(RESET)"
 	@echo "$(CYAN)  __  __ _       _   _____ _          _ _ "
-	@echo "$(CYAN) |  \/  (_)     (_) / ____| |        | | |"
-	@echo "$(CYAN) | \  / |_ _ __  _ | (___ | |__   ___| | |"
-	@echo "$(CYAN) | |\/| | | '_ \| | \___ \| '_ \ / _ \ | |"
-	@echo "$(CYAN) | |  | | | | | | |_____) | | | |  __/ | |"
-	@echo "$(CYAN) |_|  |_|_|_| |_|_|______/|_| |_|\___|_|_|"
+	@echo "$(CYAN) |..\/..(.)     (.) / ____|.|        |.| |"
+	@echo "$(CYAN) |.\../.|_ _ __  _ | (___ |.|__   ___|.| |"
+	@echo "$(CYAN) |.|\/|.|.| '_ \|.| \___ \|.'. \ / _ \.| |"
+	@echo "$(CYAN) |.|  |.|.| | | |.|_____) |.| |.|  __/.| |"
+	@echo "$(CYAN) |.|  |.|.|_| |_|._______/|.| |.|\___|.|_|"
 	@echo "$(RESET)"
-	@echo "$(GREEN)✓ $(NAME) compiled successfully!$(RESET)"
-	@echo "$(GREEN)✓ $(NAME) ready to start..$(RESET)"
+	@echo "$(BLINK)$(GREEN)✓ $(NAME) ready to start..$(RESET)$(NOBLINK)"
 
 # Compile each .c file into a .o file
 %.o: %.c
@@ -96,10 +120,12 @@ valgrind: $(NAME)
 # Cleans
 clean:
 	@$(RM) $(OBJS)
-	@echo "$(YELLOW)✓ Object files removed! !$(RESET)"
+	@$(MAKE) -C $(LIBFT_DIR) clean --no-print-directory
+	@echo "$(YELLOW)✓ Object files removed!$(RESET)"
 
 fclean: clean
 	@$(RM) $(NAME)
+	@$(MAKE) -C $(LIBFT_DIR) fclean --no-print-directory
 	@echo "$(YELLOW)✓ $(NAME) cleaned!$(RESET)"
 
 re: fclean all

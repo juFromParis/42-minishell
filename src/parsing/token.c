@@ -6,7 +6,7 @@
 /*   By: jderachi <jderachi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/15 20:11:26 by jderachi          #+#    #+#             */
-/*   Updated: 2025/11/25 13:51:52 by jderachi         ###   ########.fr       */
+/*   Updated: 2025/12/11 13:37:03 by jderachi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,6 +31,7 @@ void	token_add_back(t_token **list, t_token *new)
 
 	if (!*list)
 	{
+		new->prev = NULL;
 		*list = new;
 		return ;
 	}
@@ -38,6 +39,7 @@ void	token_add_back(t_token **list, t_token *new)
 	while (tmp->next)
 		tmp = tmp->next;
 	tmp->next = new;
+	new->prev = tmp;
 }
 
 void	token_push(t_token **list, t_token *token, int *i)
@@ -46,4 +48,9 @@ void	token_push(t_token **list, t_token *token, int *i)
 		token_add_back(list, token);
 	else
 		(*i)++;
+}
+
+int	is_cmd_token(t_token_type type)
+{
+	return (type == T_WORD || type == T_CMD);
 }

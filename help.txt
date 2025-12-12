@@ -1,0 +1,15 @@
+// ORDER
+
+1. Tokenisation
+2. Quotes
+3. Here-doc delimiter rules
+4. Expansions
+     - ~
+     - $VAR
+     - $(cmd)
+     - $(( ))
+     - field splitting
+     - globbing
+5. Redirections
+6. Pipelines
+7. Exécution

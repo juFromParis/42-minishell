@@ -1,0 +1,32 @@
+Bonne observation — ce comportement vient de deux choses différentes : (1) la façon dont votre exécuteur recherche/essaie la commande, et (2) la manière dont vous affichez / mappez l’erreur. Voici une explication claire et pratique pour reproduire le comportement de bash, puis des actions concrètes à appliquer.
+
+Pourquoi bash affiche « command not found » alors que votre code renvoie une « adresse invalide »
+
+Bash ne se contente pas d’appeler execve directement sur le mot tapé : si le nom de commande ne contient pas de /, le shell parcourt les répertoires de PATH et cherche un exécutable. S’il ne trouve rien, bash affiche un message lisible « command not found » et retourne 127.
+Si votre code construit un pathname incorrect ou retourne/affiche une valeur non signée (par ex. l’adresse d’un buffer ou d’un pointeur) au lieu d’un message texte lisible, vous verrez une sortie étrange (adresse hexadécimale) ou un code de retour incohérent.
+Autre cause fréquente : vous laissez errno non interprété et affichez strerror(errno) qui donne un message système (p.ex. “No such file or directory”), ou vous affichez une variable qui contient un pointeur au lieu du nom de la commande.
+Comportement attendu (mimique de bash)
+
+Si la commande ne contient pas de / :
+Chercher dans chaque dossier de PATH. Si rien trouvé → message "minishell: cmd: command not found" et exit code 127.
+Si la commande contient un / (utilisateur a fourni un chemin) :
+Appeler execve(path, ...). Si execve échoue et errno == ENOENT → 127 (commande absente) ; si errno == EACCES, EISDIR, ENOEXEC → 126 (trouvé mais non exécutable / format invalide).
+Toujours écrire les messages d’erreur sur stderr.
+Dans l’enfant : après un échec d’exec*, appeler _exit(code) (pas exit).
+Table utile de mapping errno → code (convention shell)
+
+127 : commande introuvable (not found)
+126 : commande trouvée mais non exécutable / autre erreur d’exécution
+Exemples :
+ENOENT → 127
+EACCES, EISDIR, ENOEXEC → 126
+Autres → 126 (ou 1 selon votre politique)
+Erreurs courantes dans un exécuteur qui donnent des « adresses invalides »
+
+Vous affichez printf("%p", some_ptr) ou printf("%d", some_ptr) par erreur. Vérifiez le format de printf.
+Vous retournez directement un char * comme code entier à l’appelant (mauvais type).
+Vous n’avez pas fait la recherche PATH et vous appelez execve sur une chaîne incomplète ou temporaire que vous afficez ensuite.
+Action concrète : que modifier dans exec_command.c
+
+Option A (rapide) : laissez le système faire la recherche — utilisez execvp(args_null_terminated[0], args_null_terminated) plutôt que de construire vous‑même un pathname. execvp recherche dans PATH automatiquement.
+Option B (manuelle, plus contrôlée) : implémentez find_in_path() (comme je vous ai montré précédemment), obtenez path, puis execve(path, args, environ). Si find_in_path renvoie NULL → afficher « command not found » et _exit(127) dans l’enfant.

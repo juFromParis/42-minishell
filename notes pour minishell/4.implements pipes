@@ -1,0 +1,15 @@
+the output of each command in the pipeline is connected to the input of the next command
+Points importants / différences avec autres exec*
+
+execve est la fonction système la plus bas niveau (nécessite chemin complet).
+execvp / execlp : variantes qui recherchent l’exécutable dans la variable PATH.
+execv, execl, execle etc. : variations selon si vous passez argv/envp ou des arguments séparés.
+Bonnes pratiques générales
+
+Préparez argv et envp correctement et terminez chaque tableau par NULL. Oublier le NULL provoque comportement indéfini.
+Testez la valeur de retour et utilisez perror() / strerror(errno) pour diagnostiquer les erreurs.
+Si vous êtes dans un enfant issu d’un fork, utilisez _exit(status) après un execve qui échoue (pas exit), pour éviter d’exécuter les handlers d’atexit ou de flush des streams du parent.
+Fermez les FDs inutiles avant execve. Les FD restent ouverts à travers exec sauf si O_CLOEXEC a été utilisé lors de leur ouverture ou FD_CLOEXEC activé.
+Pour redirections : effectuez open() + dup2() avant execve.
+
+Exécuter un programme externe nécessite execve, qui remplace le processus courant — vous ne pouvez donc pas appeler execve dans le processus du shell sans perdre le shell. Pour les commandes externes il faut donc fork -> exec dans l’enfant.

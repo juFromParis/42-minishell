@@ -1,0 +1,24 @@
+total 160
+-rwxr-xr-x  1 vtaniga 2025_paris  15920 Nov 14 10:22 a.out
+-rw-r--r--  1 vtaniga 2025_paris      0 Dec  9 11:33 d
+-rw-r--r--  1 vtaniga 2025_paris      0 Dec 10 09:57 dd
+-rw-r--r--  1 vtaniga 2025_paris      0 Dec 10 09:57 ee
+-rw-r--r--  1 vtaniga 2025_paris     19 Dec 12 19:31 end
+-rw-r--r--  1 vtaniga 2025_paris      0 Dec 10 09:57 ff
+-rw-r--r--  1 vtaniga 2025_paris      0 Nov 27 10:20 file.txt
+-rw-r--r--  1 vtaniga 2025_paris    209 Nov 24 11:55 help.txt
+drwxr-xr-x  2 vtaniga 2025_paris     25 Dec 12 21:30 inc
+drwxr-xr-x  4 vtaniga 2025_paris     59 Dec 12 22:07 libft
+-rw-r--r--  1 vtaniga 2025_paris   3986 Dec 12 21:30 Makefile
+-rwxr-xr-x  1 vtaniga 2025_paris 103008 Dec 12 22:07 minishell
+-rw-r--r--  1 vtaniga 2025_paris     13 Dec 12 21:30 moussafile
+drwxr-xr-x  2 vtaniga 2025_paris   4096 Dec 12 21:30 notes pour minishell
+-rw-r--r--  1 vtaniga 2025_paris      0 Dec 12 22:07 outfile
+-rw-r--r--  1 vtaniga 2025_paris   1085 Dec 12 21:30 outfile2
+-rw-r--r--  1 vtaniga 2025_paris   1146 Dec 12 21:30 outfile3
+drwxr-xr-x  2 vtaniga 2025_paris      6 Dec 12 19:31 Rank_03
+-rw-r--r--  1 vtaniga 2025_paris   1265 Nov 27 10:20 readline.supp
+drwxr-xr-x  3 vtaniga 2025_paris   4096 Dec 12 21:30 sandbox
+drwxr-xr-x 14 vtaniga 2025_paris   4096 Dec 12 22:07 src
+-rw-r--r--  1 vtaniga 2025_paris      0 Dec 10 09:57 t
+-rw-r--r--  1 vtaniga 2025_paris      0 Dec 12 21:30 test_redir.txt
