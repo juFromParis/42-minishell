@@ -1,0 +1,86 @@
+#############################################
+# Ignore Readline + Ncurses + Tinfo leaks
+#############################################
+
+{
+    readline_allocation_1
+    Memcheck:Leak
+    match-leak-kinds: reachable
+    ...
+    fun:readline
+}
+
+{
+    readline_allocation_2
+    Memcheck:Leak
+    match-leak-kinds: reachable
+    ...
+    fun:rl_initialize
+}
+
+{
+    readline_allocation_3
+    Memcheck:Leak
+    match-leak-kinds: reachable
+    ...
+    fun:_rl_init_terminal_io
+}
+
+{
+    tinfo_leak_1
+    Memcheck:Leak
+    match-leak-kinds: reachable
+    fun:calloc
+    ...
+    fun:_nc_find_type_entry
+}
+
+{
+    tinfo_leak_2
+    Memcheck:Leak
+    match-leak-kinds: reachable
+    fun:calloc
+    ...
+    fun:tgetstr_sp
+}
+
+{
+    readline_map
+    Memcheck:Leak
+    match-leak-kinds: reachable
+    fun:xmalloc
+    ...
+    fun:rl_make_bare_keymap
+}
+
+{
+    readline_generic_bind
+    Memcheck:Leak
+    match-leak-kinds: reachable
+    fun:xmalloc
+    ...
+    fun:rl_generic_bind
+}
+
+{
+    readline_parse_and_bind
+    Memcheck:Leak
+    match-leak-kinds: reachable
+    fun:xmalloc
+    ...
+    fun:rl_parse_and_bind
+}
+
+{
+    readline_history
+    Memcheck:Leak
+    match-leak-kinds: reachable
+    ...
+    fun:add_history
+}
+
+{
+    readline_sigint
+    Memcheck:Leak
+    fun:_rl_signal_handler
+}

@@ -1,0 +1,34 @@
+Lexer et Parser : Définitions et Fonctionnalités
+Lexer (Tokeniseur)
+
+Un lexer, ou tokeniseur, est un composant logiciel qui transforme le code source en une séquence de tokens. Ses principales caractéristiques sont :
+
+    Entrée : Code source brut.
+    Sortie : Séquence de tokens.
+    Fonction : Reconnaît et catégorise les éléments du code (mots-clés, opérateurs, identifiants, etc.).
+    Niveau d'opération : Travaille au niveau des caractères.
+    Outils : Peut être implémenté manuellement ou généré via des outils comme Flex ou Lex.
+
+Parser (Analyseur Syntaxique)
+
+Un parser, ou analyseur syntaxique, analyse la séquence de tokens produite par le lexer pour construire une structure significative. Ses principales caractéristiques sont :
+
+    Entrée : Flux de tokens générés par le lexer.
+    Sortie : Arbre syntaxique abstrait (AST) ou analyse sémantique.
+    Fonction : Vérifie la syntaxe et construit une représentation intermédiaire du code.
+    Niveau d'opération : Travaille au niveau des tokens pour construire une structure hiérarchique.
+    Outils : Peut être implémenté manuellement ou généré via des outils comme Yacc, Bison ou ANTLR.
+
+Différences Clés
+
+    Niveau d'abstraction : Le lexer opère à un niveau plus bas (caractères) que le parser (tokens).
+    Rôle : Le lexer tokenise le code, tandis que le parser analyse la structure syntaxique.
+    Outils : Les outils utilisés pour générer des lexers et des parsers diffèrent (Flex/Lex pour les lexers, Yacc/Bison/ANTLR pour les parsers).
+
+Utilisations
+
+    Compilation : Transformation du code source en instructions exécutables.
+    Conception de langages : Définition et vérification de la syntaxe d'un nouveau langage.
+    Analyse de code : Création d'outils comme les linters ou les analyseurs statiques.
+
+En résumé, les lexers et les parsers sont des composants essentiels pour l'interprétation et l'analyse du code source, chacun jouant un rôle distinct mais complémentaire dans le processus de compilation ou d'interprétation.

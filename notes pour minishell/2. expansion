@@ -1,0 +1,95 @@
+pathname expansion
+* => expands to every possible name, shell operation that takes a word that contains a wioldcard and replace it byt he liste of pathnames that match.
+
+tilde expansion (not implemented)
+~ at the beginning of a word, expands to home directory of the named user
+or the current user if no name
+
+brace expansion (not implemented)
+echo Front-{A,B}-Back
+
+parameter and variable expansion
+$VAR or ${VAR} expands to the value of the variable VAR
+with every other types of expansion if mistyped expansion will not take place but here the variable expands to an empty string
+
+command substitution (not implemented)
+$(command) or `command` expands to the output of the command
+
+
+exit status expansion
+$? expands to the exit status of the last command executed
+
+Courte réponse recommandée
+Pour un minishell correct et simple à maintenir, construisez d’abord l’AST à partir des tokens (en conservant pour chaque token des méta‑infos sur les quotes/escapes), puis appliquez les expansions en parcourant l’AST avant d’assembler les argv et d’exécuter. En d’autres mots : parse → AST (structure) → expansion (sur chaque nœud en contexte) → exécution.
+
+Pourquoi cette approche (résumé)
+
+Le parsing a besoin d’information sur la structure (redirections, parenthèses, opérateurs, séparation d’arguments). Si vous faites toutes les expansions avant d’avoir la structure, vous risquez de perdre le contexte (p.ex. savoir qu’un mot est attendu comme nom de fichier de redirection vs argument) et d’appliquer incorrectement des opérations comme le split.
+En construisant l’AST d’abord vous pouvez stocker pour chaque token des drapeaux (quote simple/double, caractère d’échappement, whether it came from heredoc delimiter, etc.). Ces drapeaux sont nécessaires pour appliquer correctement les différentes étapes d’expansion (quelque chose de mis entre quotes doit empêcher le word-splitting ou le globbing).
+Faire l’expansion sur l’AST vous permet d’appliquer des règles différentes selon le contexte : arguments d’une commande (word splitting + pathname expansion), cible d’une redirection (souvent doit produire exactement une chaîne), here‑doc delimiter (comportement spécial), etc.
+Détails — ordre d’opérations et où les exécuter
+
+POSIX définit un ordre d’expansions : tilde expansion, parameter/variable expansion, command substitution, arithmetic expansion, puis field splitting (word splitting), puis pathname expansion (globbing), puis quote removal. Respectez cet ordre quand vous implémentez.
+Implémentation pratique pour votre minishell :
+Tokenizer / Lexer : produire tokens avec valeur brute + métadonnées (type WORD/OP/etc., flags: in_squote, in_dquote, escapes present). Ne pas supprimer les quotes ici ; stocker l’information.
+Parser : construire l’AST (nœuds CMD, REDIR, PIPE, AND/OR, SUBSHELL, etc.) en utilisant les tokens bruts. Attacher aux nœuds les tokens (ou copies) avec leurs flags.
+Expansion sur AST :
+Pour chaque nœud CMD : pour chaque token argument :
+a) Effectuer les expansions qui ne dépendent pas du split : tilde, parameter expansion, command substitution (ce dernier implique exécution), arithmetic. Respecter quotes : en single‑quote ne faites aucune expansion ; en double‑quote faites parameter/command/arithmetic mais pas word splitting/globbing.
+b) Après ces expansions, si le token n’était pas protégé (pas entre quotes), faire le word‑splitting (split selon IFS).
+c) Pour chaque word résultant, faire pathname expansion (globbing).
+d) Finalement, faire quote removal (supprimer quotes restants).
+e) Le résultat remplace le token : assemblez la liste finale d’argv (un token initial peut devenir plusieurs argv après split).
+Pour les redirections : appliquez (a) puis (d); si le résultat produit plusieurs mots après splitting, c’est souvent une erreur de syntaxe — décidez d’un comportement (signal d’erreur ou prendre le premier mot). (Nota : se référer à POSIX ; implémentation permissive : signaler une erreur.)
+For here‑docs : expansions et traitement dépendent du delimiter quoting (si quoted delimiter → no expansion).
+Après expansions : transformez les nœuds CMD en tableaux char *argv[] prêtes pour execve/execvp.
+Avantages concrets
+
+Conservation du contexte : vous savez si un token était cité ou dans quelle position syntaxique il se trouve (redir target vs arg).
+Simplicité des tests : vous pouvez écrire des tests ciblés sur l’AST + expansion (ex. expansion variable en argument, en redirection, en héritage).
+Modularité : lexer/parseur/expander/executor séparés, plus facile à maintenir.
+Inconvénients d’expander trop tôt (lexer → expansion)
+
+Perte d’information sur quotes/position si vous retirez les quotes trop tôt.
+Risque d’appliquer word splitting à des tokens qui doivent rester atomiques pour le parsing (p.ex. redirections mal attachées).
+Comportements ambigus quand une expansion génère des opérateurs (rare mais possible si on ne protèges pas).
+Implémentation pratique — suggestions d’API et structures
+
+Token { char *raw; int type; bool in_squote; bool in_dquote; bool escaped; }
+AST Node { type, value (for nodes that keep tokens), child, sibling, parent, metadata }
+Expander API :
+char **expand_and_split_token(t_token *tok, char **envp) -> NULL-terminated array of strings (caller frees)
+char *expand_token_to_string(t_token *tok, char **envp) -> single string (for redirection targets if required)
+Command substitution :
+Must execute the subcommand, capture stdout (possibly strip trailing newline depending on rules), then use that text for further expansions.
+Be careful with signal handling and heredoc.
+Corner cases à prévoir
+
+Here‑docs: delimiter quoted vs unquoted change expansion behavior.
+Command substitution producing multiple lines → splitting into words.
+Field splitting with IFS personnalisé.
+Globbing matching dotfiles only when pattern starts with dot.
+Errors: expansion can fail (memory, command substitution failing) — propager l’erreur au parseur/executor.
+Builtins that must run in parent (cd, export) : expansions are done in the same way, mais exécution doit être dans le parent si builtin modifie l’état du shell.
+Tests recommandés
+
+Variables dans arguments, en double quotes, en single quotes.
+Command substitution returning multiple words.
+Redirections dont le résultat donne plusieurs mots.
+Globbing résultat vide (nullglob vs leave-as-is).
+Heredoc quoted delimiter vs unquoted.
+Conclusion (règle pratique)
+
+Construisez l’AST sans supprimer les quotes ; gardez les flags. Ensuite, effectuez les expansions en parcourant l’AST et en tenant compte du contexte du nœud. Cela donne la meilleure combinaison de conformité, lisibilité et facilité d’implémentation.
+
+tests a effectuer :
+echo *.txt          # file1.txt file2.txt file10.txt my file.txt
+echo file?.txt      # file1.txt file2.txt (pas file10.txt)
+echo *.[ch]         # test.c test1.c testA.c
+echo .*             # .hidden .bashrc . ..
+echo .[!.]*         # .hidden .bashrc
+echo src/*.c        # src/main.c src/utils.c
+echo *.nomatch      # *.nomatch (si rien ne correspond)
+echo test[0-9].c    # test1.c
+echo test[!0-9].c   # testA.c
+

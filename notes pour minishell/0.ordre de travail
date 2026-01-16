@@ -1,0 +1,27 @@
+pour l'expansion suivre l'ordre suivant :
+Respecter l'ordre d'expansion POSIX : tilde → parameter/variable → command substitution → arithmetic → word splitting → pathname (globbing) → quote removal.
+Tilde expansion (~, ~user) — si en début de mot.
+Parameter expansion ($VAR, $?, $#, ${VAR}) — respectez cas non définis.
+Command substitution ($(cmd) ou `cmd`) — exécuter la commande et capturer la sortie (supprimer la/les dernière(s) nouvelle(s) ligne).
+Arithmetic expansion ($((...))).
+Word splitting — s'applique si le résultat n'est pas entre quotes : découpage selon IFS (par défaut espaces/tabs/newlines).
+Pathname expansion (globbing *, ?, [...]) — après word splitting.
+Quote removal — supprimer les quotes qui encadraient les mots.
+
+Single quotes '...' : aucune expansion à l'intérieur (pris littéralement).
+Double quotes "..."" : permettent parameter, command et arithmetic expansion, mais empêchent word splitting et pathname expansion. Quote removal se fait à la fin.
+Backslash \ échappe le caractère suivant (selon contexte).
+
+Redirections & heredoc
+
+Les mots de redirection (fichiers) subissent aussi les expansions (tilde/var/command/etc.) — donc il faut les expand avant d'ouvrir/dupliquer les FDs.
+Heredoc : si le délimiteur est non-quoted, appliquer les expansions dans le contenu (variable expansion); si le délimiteur est quoted, ne pas faire d'expansion pour le contenu (POSIX et comportement 42 souvent attendu). La lecture du heredoc nécessite une gestion spéciale (lire avant d'exécuter la commande, gérer signaux).
+Expander module : expand_tokens(tokens) :
+Pour chaque token de type WORD ou REDIR_WORD :
+Si token est single-quoted → enlever quotes plus tard, retourner tel quel.
+Sinon : appliquer tilde → parameter → command-subst → arithmetic.
+Si token était double-quoted, NE PAS faire word-splitting ni globbing.
+Sinon faire word-splitting (IFS) → chaque fragment passe globbing → remplacer token par une liste de tokens.
+Retourner liste de tokens potentiellement agrandie.
+Parser consomme la liste déjà expandée et construit l'AST (redirections ont fichiers déjà résolus).
+Executor utilise AST ; il appliquera redirections (open/dup2) avec les chemins déjà calculés.

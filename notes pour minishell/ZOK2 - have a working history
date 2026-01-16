@@ -1,0 +1,2 @@
+add_history function allows to have a working directory
+but it is not writen to hard drive, need to use  write_history/ read_history for that

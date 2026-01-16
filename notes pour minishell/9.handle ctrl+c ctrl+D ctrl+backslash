@@ -1,0 +1,14 @@
+in interactive mode ? what does it mean ? is there a non interactive mode ?
+
+
+ctrl+c 
+arret return 1 (error)
+
+ctrl+d
+arret return 0 (pas d'erreur)
+
+ctrl+\ (sors en faisant un core dumped)
+ne fait rien
+
+
+Les signaux sont herites des parents

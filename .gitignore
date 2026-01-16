@@ -1,0 +1,8 @@
+a.out
+minishell
+*.o
+<<<<<<< HEAD
+*.a
+=======
+*.a
+>>>>>>> origin/master

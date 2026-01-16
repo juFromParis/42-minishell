@@ -1,0 +1,23 @@
+
+Ce qu'est un arbre binaire / AST et pourquoi c'est utile pour minishell
+Un arbre binaire (ou plus généralement un arbre) est une structure de données où chaque nœud a au plus deux enfants (gauche/droite).
+En shell, on utilise surtout un AST (Abstract Syntax Tree) — souvent binaire pour des opérateurs binaires — pour représenter la structure syntaxique d'une ligne de commande : commandes simples, pipes, opérateurs logiques (&&, ||), séparateurs (;) et redirections.
+Avantages concrets :
+Représentation claire de la priorité des opérateurs (precedence) et de l'ordre d'exécution.
+Exécution facile via parcours d'arbre (souvent post-order : exécuter enfants avant le parent).
+Simplifie l'implémentation d'opérateurs composites (pipe entre deux sous-arbres, &&/|| qui testent le code de retour).
+Facilite l'analyse d'erreurs, la gestion des sous-shells, la réécriture ou optimisation.
+
+
+Comment écrire/peupler l'arbre dans minishell
+Étapes générales :
+
+Tokenize (séparer mots, quotes, opérateurs : |, &&, ||, >, >>, <, ;, (, ), heredoc <<).
+Parser qui respecte la priorité :
+Par exemple priorité (du plus fort au plus faible) : parenthèses, redirections (attachées à la commande), pipes, &&/||, ; (séparateur).
+Construire l'AST : chaque opérateur binaire devient un nœud avec deux enfants ; chaque commande simple devient feuille (nœud de type CMD contenant argv et redirs).
+Exécuter via parcours (voir section exécution).
+Deux approches de parsing courantes :
+
+Shunting-yard (transformer en RPN puis construire l'arbre) — pratique pour gérer priorité des opérateurs.
+Recursive descent / Pratt parser — souvent plus lisible pour des grammaires simples ; traiter les redirections comme appartenant à la command node.

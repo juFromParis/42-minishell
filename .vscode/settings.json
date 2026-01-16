@@ -1,0 +1,12 @@
+{
+	"files.associations": {
+		"utils.h": "c",
+		"minishell.h": "c",
+		"env.h": "c",
+		"fcntl.h": "c",
+		"exec.h": "c",
+		"errno.h": "c",
+		"expansion.h": "c",
+		"libft.h": "c"
+	}
+}

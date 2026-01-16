@@ -1,0 +1,123 @@
+Voici un guide étape‑par‑étapes, conceptuel et pratique, pour transformer une liste de tokens (vos T_WORD, T_PIPE, T_REDIR_*, T_AND, T_OR, T_PARENT_OPEN, T_PARENT_CLOSE, etc.) en un AST adapté à un minishell. Pas de code — seulement la logique, les décisions d’architecture et les pièges à éviter.
+
+1) Définir les types de nœuds et leur sémantique
+
+Nœud commande (CMD) : feuille représentant une commande simple avec :
+liste d’arguments (argv),
+liste de redirections attachées (in/out/append/heredoc) — pas comme opérateurs séparés.
+Nœud pipe (PIPE) : opérateur binaire liant gauche → droite (stdout gauche vers stdin droite).
+Nœud logique (AND / OR) : opérateur binaire; exécution du droit dépend du statut du gauche.
+Nœud séquence (SEQ / ; ) : exécution séquentielle (exécuter gauche puis droite).
+Nœud redirection (optionnel) : souvent mieux d’attacher les redirs au nœud CMD plutôt que d’avoir des nœuds binaires pour redirs.
+Nœud subshell (SUBSHELL / PAREN) : exécuter un sous‑arbre dans un sous‑process (par ex. ( ... )).
+Nœud END / NOOP / ERROR : auxiliaires pour représenter fin ou erreurs.
+Décidez clairement si les redirections sont des nœuds ou des métadonnées de CMD (recommandé : métadonnées de CMD).
+
+2) Spécifier la priorité (precedence) et l’associativité
+
+Priorités (du plus fort au plus faible) typiquement :
+Parenthèses (groupe)
+Redirections (attachées à la commande)
+Pipes (|) — associativité gauche
+Opérateurs logiques (&&, ||) — associativité gauche
+Séparateur ; — associativité gauche
+Note : les redirections doivent être prises comme faisant partie d’une commande même si elles viennent après ou avant (ex. cmd > out).
+3) Choisir une stratégie de parsing
+
+Deux approches courantes (toutes deux valables) :
+Shunting‑Yard → RPN → AST :
+Traitez opérateurs avec leur priorité et associativité pour produire une RPN.
+Convertissez la RPN en AST en empilant nœuds (opérateurs prennent leurs opérandes depuis la pile).
+Avantage : gère proprement priorités variées et variantes d’opérateurs.
+Recursive Descent / Pratt parser :
+Écrire fonctions du type parse_line → parse_pipeline → parse_and_or → parse_command → parse_simple_command.
+À chaque niveau, gérer l’opérateur du niveau (ex. parse_pipeline enchaîne parse_command avec |).
+Avantage : plus lisible et plus facile à étendre pour constructs spécifiques (parenthèses, heredoc).
+Recommandation : pour un minishell, la recursive descent est souvent plus simple à comprendre et à déboguer. Le shunting‑yard est robuste si vous maîtrisez la conversion RPN.
+4) Comment consommer les tokens — règles pratiques
+
+Traitez les tokens séquentiellement avec un pointeur/itérateur et un mécanisme de lookahead (au moins 1 token).
+parse_simple_command doit :
+Consommer une série de T_WORD pour construire argv (en tenant compte que l’expansion a déjà eu lieu ou pas selon votre pipeline).
+À côté, consommer immédiatement les tokens de redirection qui suivent (ex. > file), et ajouter ces redirs à la structure CMD.
+S’arrêter quand un opérateur de plus haut niveau est rencontré (|, &&, ||, ;, ), T_END).
+Parenthèses : quand vous rencontrez ( appelez récursivement le parseur pour construire un sous‑arbre jusqu’à la ).
+Erreurs syntaxiques : vérifier opérateurs en début/fin de ligne, deux opérateurs consécutifs non valides, redirection sans cible, parenthèse non fermée. Toujours produire un message d’erreur clair et abandonner le parse si incohérence.
+5) Attacher les redirections
+
+Lors d’un parse_simple_command :
+Dès que vous voyez un token T_REDIR_IN/OUT/APPEND/HEREDOC, consommez‑le et exigez ensuite un T_WORD (nom de fichier / delimiteur).
+Enregistrez la redirection dans la structure CMD (type, cible, mode).
+Si la cible est absente → erreur syntaxe.
+Important : l’ordre importe (dernière redirection du même type prévaut), mais vous pouvez simplement stocker la liste et appliquer dans l’ordre d’apparition.
+6) Construire l’AST étape par étape
+
+Exemple (recursive descent) :
+parse_line → while tokens exist: node = parse_and_or() ; si ; rencontré combine node avec la suite dans un SEQ ; retourner node.
+parse_and_or → left = parse_pipeline() ; while next is && or || : op = next ; right = parse_pipeline() ; left = new_op_node(op, left, right) ; return left.
+parse_pipeline → left = parse_command() ; while next is | : right = parse_command() ; left = new_pipe_node(left, right) ; return left.
+parse_command → if next is ( then parse subshell else parse_simple_command.
+parse_simple_command → collect words into argv and redirs into command struct ; return CMD node.
+Dans la version shunting‑yard → RPN, traitez redirs comme ayant très haute priorité/associativité pour être attachées à leur commande.
+7) Règles pour expansions / lexer / parser interaction
+
+Décidez d’un pipeline clair : typiquement lexer → expander → parser → executor.
+Le parser doit recevoir des tokens déjà nettoyés des quotes/échappements si vous suivez la recommandation. Sinon, il doit savoir reconnaître quote/raw tokens.
+Les redirections doivent être passées au parser comme tokens distincts, mais leurs cibles (fichiers) doivent être le résultat d’une expansion (ou alors le parser doit appeler l’expander pour le mot de redirection).
+8) Exécution — comment l’AST sera utilisé
+
+Utilisez un parcours post‑order (exécuter enfants avant le parent) pour la plupart des opérateurs :
+CMD : fork/exec (ou builtin détecté et exécuté sans fork si besoin).
+PIPE : créer pipe(), exécuter sous‑arbre gauche avec stdout redirigé vers pipe[1], sous‑arbre droit avec stdin depuis pipe[0]; attendre enfants.
+AND/OR : exécuter gauche, vérifier statut ; exécuter droite seulement si condition true selon l’opérateur.
+SEQ : exécuter gauche puis droite (sans condition).
+SUBSHELL : exécuter le sous‑arbre dans un fork pour isoler l’environnement.
+REDIR : lors de l’exécution d’un CMD, appliquer les redirections (open/dup2) avant l’exec.
+Gérer les builtin qui doivent modifier l’environnement du parent (ex. cd, export): s’ils doivent affecter le parent, ne les exécutez pas dans un fork lorsqu’ils sont la commande principale; si dans pipeline, exécutez dans fork.
+9) Gestion des erreurs et messages
+
+Pour chaque erreur de parsing, renvoyer un code d’erreur clair et un message lisible (ex. syntax error near unexpected token '|').
+Pour erreurs d’exécution (fichiers non trouvés, permission) retournez status approprié (127/126 etc.) et propagez les statuts à des opérateurs logiques.
+10) Mémoire et ownership
+
+Décidez qui possède les chaînes argv et les cibles de redirection : AST doit posséder (copier) ces données pour pouvoir libérer l’AST proprement.
+Implémentez free_ast(node *) qui fait un post‑order freeing : libère sous‑arbres, champs internes (argv, strings, liste redirs) puis le nœud.
+Préparez des helpers node_new_*, node_free, node_print (pour debug).
+11) Tests à implémenter
+
+Tests unitaires de parsing (entrée = liste de tokens) vs forme d’AST attendue :
+simple commande echo a b
+redirections echo hi > out
+pipeline echo x | grep x | wc -l
+logique false || echo ok && echo fine
+parenthèses (echo a; echo b) | wc
+combinaison de redirs et pipes cmd < in | cmd2 > out
+erreurs : | echo, echo > (redirection sans cible), parenthèse non fermée.
+Tests d’intégration : exécuter l’AST et vérifier comportements system (status, outputs).
+Testez aussi la libération mémoire via valgrind.
+12) Debugging et visualisation
+
+Ajoutez une fonction print_ast(node*, indent) pour afficher structure (type du nœud, argv, redirs). Très utile pour valider le parser sans lancer l’exécution.
+Comparez l’AST produit par différentes entrées et corrigez les divergences.
+13) Approche incrémentale conseillée
+
+Implémentez parse_simple_command et construire correctement CMD (argv + redirs). Ajoutez tests.
+Ajoutez parsing de PIPE (chaîne de CMD) et exécution simple.
+Ajoutez AND/OR et SEQ, testez la logique conditionnelle.
+Ajoutez parsing des parenthèses / subshell.
+Ajoutez règles fines (heredoc, redirections multiples).
+Finalisez exécuteur (gestion des builtin, signal handling, wait pid).
+14) Pièges courants
+
+Ne pas attacher correctement les redirs (les perdre lors de la transformation en AST).
+Mal gérer l’associativité des pipes et opérateurs logiques (ex. faire des arbres droits au lieu de gauches).
+Oublier de gérer la portée des variables/env dans les subshells.
+Fuite mémoire si l’AST ne possède pas ou ne libère pas ses chaînes.
+15) Checklist d’acceptation (critères)
+
+Le parser accepte les constructions valides attendues par le sujet.
+Les erreurs syntaxiques sont détectées et claires.
+Les redirections s’appliquent à la commande correcte.
+Les pipes et opérateurs logiques respectent la priorité/associativité.
+L’AST est libéré proprement (pas de fuites pour cas tests).
+L’exécuteur effectue forks/dup/exec comme prévu et renvoie les statuts corrects.
